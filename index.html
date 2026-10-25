@@ -1,0 +1,658 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="直属ドラフト">
+<meta name="theme-color" content="#3e2b1d">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
+<title>直属ドラフト会議</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Yuji+Syuku&family=Shippori+Mincho+B1:wght@600;800&family=Zen+Kaku+Gothic+New:wght@500;700;900&display=swap">
+<style>
+/* Layout: 道場の板張りの上に、男子/女子の切り替え → 今やること(和紙パネル) → 指名表。演出は墨の幕で自動進行。
+   Single deliberate look: wood / washi / sumi / shu. */
+:root{
+  --wood:#3e2b1d; --wood2:#4b3524; --wood-line:rgba(0,0,0,.28); --on-wood:#f3eadb; --on-wood-dim:#c9b597;
+  --washi:#f7f5ef; --washi2:#ece8dd; --sumi:#1c1916; --sumi-dim:#6a6258; --rule:#cfc8b8;
+  --shu:#c8261e; --shu-soft:rgba(200,38,30,.08); --take:#c9a46a; --hane:#2b2622; --ok:#2f6b3a;
+  --brush:"Yuji Syuku","Shippori Mincho B1","Hiragino Mincho ProN",serif;
+  --mincho:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif;
+  --gothic:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{background:var(--wood)}
+body{margin:0;min-height:100vh;color:var(--on-wood);font-family:var(--gothic);font-size:15px;line-height:1.6;
+  background:repeating-linear-gradient(90deg,transparent 0 118px,var(--wood-line) 118px 120px),
+    repeating-linear-gradient(90deg,rgba(255,255,255,.025) 0 3px,transparent 3px 11px,rgba(0,0,0,.04) 11px 13px,transparent 13px 29px),
+    linear-gradient(180deg,var(--wood2),var(--wood));
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 48px}
+.wrap{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+header{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:12px}
+.logo svg{width:42px;height:42px;flex:none}
+.logo small{display:block;font-family:var(--mincho);font-weight:600;font-size:12px;letter-spacing:.3em;color:var(--on-wood-dim)}
+h1{font-family:var(--brush);font-weight:400;font-size:clamp(26px,6vw,36px);line-height:1.1;margin:0;letter-spacing:.06em}
+h2{font-family:var(--mincho);font-weight:800;font-size:21px;margin:0;text-wrap:balance;line-height:1.4}
+.tools{display:flex;gap:2px;flex-wrap:wrap}
+.tools button{background:transparent;border:none;color:var(--on-wood-dim);font-size:13px;padding:6px 8px}
+.tools button:hover{color:var(--on-wood)}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tab{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:10px 14px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.15);color:var(--on-wood);text-align:left}
+.tab b{font-family:var(--mincho);font-weight:800;font-size:17px}
+.tab span{font-size:12px;color:var(--on-wood-dim)}
+.tab.on{background:var(--washi);color:var(--sumi);border-color:var(--washi);box-shadow:inset 0 -4px 0 var(--shu)}
+.tab.on span{color:var(--sumi-dim)}
+.panel{background:var(--washi);color:var(--sumi);padding:20px;display:flex;flex-direction:column;gap:16px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.step{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.step .no{background:var(--sumi);color:var(--washi);font-family:var(--mincho);font-weight:800;padding:2px 10px;font-size:14px;letter-spacing:.1em}
+.step .tg{background:var(--shu);color:#fff;font-weight:900;font-size:12px;padding:2px 8px}
+.step .pr{margin-left:auto;font-weight:700;color:var(--sumi-dim);font-size:14px;font-variant-numeric:tabular-nums}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.dim{color:var(--sumi-dim)}
+.lead{margin:0;color:var(--sumi-dim);font-size:14px}
+button{font:inherit;cursor:pointer;border-radius:2px;border:1px solid var(--sumi);background:transparent;color:var(--sumi);padding:10px 16px;font-weight:700}
+button:focus-visible,textarea:focus-visible{outline:3px solid var(--shu);outline-offset:2px}
+button.primary{background:var(--sumi);color:var(--washi);width:100%;font-size:18px;padding:16px;font-family:var(--mincho);font-weight:800;letter-spacing:.08em}
+button.primary.shu{background:var(--shu);border-color:var(--shu)}
+button.sub{border-color:var(--rule);color:var(--sumi-dim);background:#fff}
+button:disabled{opacity:.35;cursor:not-allowed}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:560px){.grid2{grid-template-columns:1fr}}
+label{font-weight:700;font-size:14px;display:flex;justify-content:space-between;gap:8px;margin-bottom:4px}
+textarea{width:100%;min-height:180px;font:inherit;font-size:15px;padding:10px 12px;border-radius:2px;border:1px solid var(--rule);background:#fff;color:var(--sumi);resize:vertical;color-scheme:light}
+.note{font-size:13px;color:var(--sumi-dim);border-left:3px solid var(--shu);padding:6px 12px;margin:0;background:var(--shu-soft)}
+.err{color:var(--shu);font-weight:700;font-size:14px;margin:0}
+.people{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.person{text-align:left;padding:14px;display:flex;flex-direction:column;gap:4px;border-color:var(--rule);background:#fff}
+.person .nm{font-family:var(--mincho);font-weight:800;font-size:18px}
+.person .st{font-size:13px;font-weight:700;color:var(--shu)}
+.person.done{background:var(--washi2);border-color:var(--rule)}
+.person.done .st{color:var(--ok)}
+.picker-h{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.picker-h b{font-family:var(--brush);font-size:32px;font-weight:400;line-height:1.2}
+.opts{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.opts button{background:#fff;border-color:var(--rule);font-size:16px;padding:14px 12px;text-align:left}
+.opts button.sel{border-color:var(--shu);box-shadow:inset 0 0 0 2px var(--shu);background:#fff7f5}
+.opts button.end{border-style:dashed;color:var(--sumi-dim);font-size:14px}
+.opts button.end.sel{color:var(--shu)}
+/* 矢取り抽選 */
+.lot-k{font-family:var(--brush);font-size:clamp(30px,8vw,44px);line-height:1.2}
+.quiver{align-self:center;width:min(100%,340px);display:flex;flex-direction:column;align-items:center}
+.quiver .arrows{display:flex;justify-content:center;gap:8px;min-height:150px;align-items:flex-end;position:relative;z-index:1;margin-bottom:-70px}
+.quiver .tube{width:min(100%,200px);height:100px;border-radius:6px 6px 14px 14px;position:relative;z-index:2;background:linear-gradient(90deg,#2a1d12,#6b4a2c 30%,#8a6238 50%,#6b4a2c 70%,#2a1d12);
+  display:flex;align-items:center;justify-content:center;color:var(--on-wood);font-family:var(--brush);font-size:20px;letter-spacing:.3em}
+.quiver .tube::before{content:"";position:absolute;left:0;right:0;top:20px;height:6px;background:var(--shu)}
+.quiver .empty{color:var(--sumi-dim);font-size:13px;margin-bottom:84px}
+.ya{position:relative;width:30px;height:150px;padding:0;border:none;background:none;flex:none}
+.ya.drop{animation:ydrop .5s cubic-bezier(.2,1.3,.4,1) both;animation-delay:calc(var(--i)*.1s)}
+@keyframes ydrop{from{transform:translateY(-50px);opacity:0}to{transform:none;opacity:1}}
+button.ya:hover{transform:translateY(-8px);transition:transform .15s}
+.ya .shaft{position:absolute;left:50%;top:0;bottom:0;width:4px;margin-left:-2px;background:linear-gradient(90deg,#b88d55,var(--take),#a07a46)}
+.ya .hane{position:absolute;left:50%;top:6px;width:24px;height:46px;margin-left:-12px;clip-path:polygon(0 12%,50% 0,100% 12%,100% 100%,50% 88%,0 100%);background:repeating-linear-gradient(180deg,var(--washi) 0 7px,var(--hane) 7px 12px)}
+.ya .hane.win{background:repeating-linear-gradient(180deg,var(--washi) 0 7px,var(--shu) 7px 12px)}
+.ya .fuu{position:absolute;left:50%;top:0;width:30px;height:58px;margin-left:-15px;background:var(--washi);border:1px solid var(--rule);display:flex;align-items:center;justify-content:center;color:var(--shu);font-family:var(--mincho);font-weight:800;font-size:13px;transition:transform .55s cubic-bezier(.5,0,.3,1),opacity .55s}
+.ya.open .fuu{transform:translateY(-70px) rotate(-12deg);opacity:0}
+.reps{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
+.rep{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 8px;border:1px solid var(--rule);background:#fff;text-align:center}
+.rep .who{font-family:var(--mincho);font-weight:800}
+.rep.now{border-color:var(--sumi);box-shadow:0 0 0 2px var(--sumi)}
+.rep.win{border-color:var(--shu);box-shadow:0 0 0 2px var(--shu);background:#fff7f5}
+.rep .hold{width:30px;height:150px;display:flex;align-items:center;justify-content:center;border:1px dashed var(--rule);color:var(--sumi-dim);font-size:11px;writing-mode:vertical-rl}
+.rep .res{font-family:var(--mincho);font-weight:800;min-height:1.4em}
+.rep.win .res{color:var(--shu)}
+/* 結果 */
+.results{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.rc{background:#fff;border:1px solid var(--rule);border-top:4px solid var(--sumi);padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.rc .sp{font-family:var(--mincho);font-weight:800;font-size:18px}
+.rc .k{display:flex;justify-content:space-between;gap:8px;font-weight:700}
+.rc .k small{color:var(--sumi-dim);font-weight:500}
+/* 指名表 */
+.board-title{display:flex;align-items:baseline;justify-content:space-between;gap:10px;border-bottom:2px solid var(--sumi);padding-bottom:6px}
+.board-title b{font-family:var(--brush);font-weight:400;font-size:24px}
+.bwrap{overflow-x:auto}
+.board table{border-collapse:collapse;min-width:100%;background:#fff}
+.board th,.board td{border:1px solid var(--sumi)}
+.board th{font-family:var(--mincho);font-weight:800;font-size:14px;padding:6px 10px;white-space:nowrap;text-align:center;background:var(--washi2)}
+.board th.rh{background:var(--sumi);color:var(--washi)}
+.board td{padding:8px 10px;vertical-align:top;min-width:110px;font-weight:700}
+.board td.rh{min-width:0;width:1%;white-space:nowrap;font-family:var(--mincho);font-weight:800;text-align:center;vertical-align:middle;background:var(--washi2)}
+.board .o{color:var(--shu);font-weight:900;margin-right:4px}
+.board .x{display:block;font-size:12px;color:var(--sumi-dim);text-decoration:line-through;font-weight:500}
+.board .lb{display:inline-block;font-size:10px;font-weight:900;border:1px solid var(--sumi-dim);color:var(--sumi-dim);padding:0 4px;margin-left:4px;vertical-align:2px}
+.board .lb.r{border-color:var(--shu);background:var(--shu);color:#fff}
+.board .pend{color:var(--sumi-dim);font-weight:500}
+.board .new{animation:flash 1.6s ease-out}
+@keyframes flash{0%{background:rgba(200,38,30,.25)}100%{background:transparent}}
+.rest{display:flex;flex-wrap:wrap;gap:6px}
+.rest span{font-size:13px;padding:2px 10px;border:1px dashed var(--sumi-dim);color:var(--sumi-dim)}
+.confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--on-wood)}
+.confirm button{color:var(--on-wood);border:1px solid var(--on-wood-dim);padding:4px 10px}
+
+/* ---------- 全画面演出 ---------- */
+.fx{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;overflow:hidden;cursor:pointer;color:var(--washi);
+  background:radial-gradient(ellipse at 50% 45%,#2a2420,#0e0c0a 75%);
+  padding:calc(56px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(70px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
+  opacity:0;transition:opacity .3s}
+.fx.on{opacity:1}
+.fx .bgmato{position:absolute;width:min(130vmin,1000px);right:-30vmin;top:50%;transform:translateY(-50%);opacity:.06;pointer-events:none}
+.fx > *:not(.bgmato){position:relative;z-index:1}
+.fx-skip{position:absolute!important;top:calc(12px + env(safe-area-inset-top,0px));right:max(12px,env(safe-area-inset-right,0px));z-index:3!important;background:rgba(255,255,255,.08);border:1px solid #6d6357;color:#cbbfae;font-size:13px;padding:6px 12px}
+.room{position:absolute!important;top:calc(16px + env(safe-area-inset-top,0px));left:max(16px,env(safe-area-inset-left,0px));font-family:var(--mincho);font-weight:800;color:#cbbfae;letter-spacing:.2em;font-size:13px;border-left:4px solid var(--shu);padding-left:8px}
+.tp{width:min(860px,100%);display:grid;grid-template-columns:auto 1fr;background:var(--washi);color:var(--sumi);box-shadow:0 20px 60px rgba(0,0,0,.6);animation:unroll .5s cubic-bezier(.6,0,.2,1) both}
+@keyframes unroll{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+.tp-side{background:var(--shu);color:#fff;writing-mode:vertical-rl;font-family:var(--mincho);font-weight:800;font-size:clamp(14px,3.6vw,19px);letter-spacing:.25em;padding:16px 10px;display:flex;align-items:center;justify-content:center;gap:10px}
+.tp-side small{font-size:.75em;background:#fff;color:var(--shu);padding:6px 2px}
+.tp-body{padding:clamp(16px,4vw,30px) clamp(16px,5vw,40px);display:flex;flex-direction:column;gap:4px;min-width:0}
+.tp-team{font-family:var(--mincho);font-weight:800;font-size:clamp(20px,5.2vw,32px);letter-spacing:.06em}
+.tp-team small{font-size:.48em;color:var(--sumi-dim);margin-right:12px;letter-spacing:.2em}
+.tp-name{font-family:var(--brush);font-size:clamp(46px,13vw,108px);line-height:1.15;min-height:1.15em;overflow-wrap:anywhere}
+.tp-name.wait{color:transparent}
+.tp-name.show{animation:ink .5s ease-out both}
+.tp-name.end{color:var(--sumi-dim)}
+@keyframes ink{0%{opacity:0;filter:blur(8px);transform:scale(1.08)}100%{opacity:1;filter:none;transform:none}}
+.tp-flag{min-height:34px}
+.tp-flag span{display:inline-block;background:var(--shu);color:#fff;font-weight:900;font-size:clamp(16px,4.4vw,22px);padding:2px 14px;animation:rise .35s both}
+@keyframes rise{from{transform:translateY(14px);opacity:0}to{transform:none;opacity:1}}
+.cap{font-family:var(--brush);font-size:clamp(40px,11vw,84px);line-height:1.2;text-align:center;letter-spacing:.06em;animation:ink .8s both;text-wrap:balance}
+.cap-k{font-family:var(--mincho);font-weight:800;color:var(--shu);letter-spacing:.4em;font-size:14px;animation:rise .5s both}
+.cap-s{color:#cbbfae;font-family:var(--mincho);font-weight:600;text-align:center;max-width:32em;animation:rise .5s .2s both}
+.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:820px}
+.chips span{border:1px solid #8c7f6e;color:var(--washi);padding:4px 14px;font-weight:700;animation:rise .4s both;background:rgba(0,0,0,.25)}
+.chips span b{color:var(--shu);font-weight:900;margin-right:6px}
+.tp .chips span{color:var(--sumi);border-color:var(--rule);background:#fff}
+.hit{position:relative;width:min(56vmin,280px);aspect-ratio:1;max-width:100%}
+.hit .m{width:100%;height:100%;display:block}
+.hit.shake .m{animation:tshake .35s}
+@keyframes tshake{20%{transform:translate(4px,-2px)}40%{transform:translate(-3px,2px)}60%{transform:translate(2px,1px)}}
+.yafly{position:absolute;top:calc(50% + var(--dy,0px));right:calc(50% + var(--dx,0px));width:min(70vw,440px);height:18px;margin-top:-9px;transform:translateX(-160vw);pointer-events:none;transform-origin:right center}
+.yafly.go{transform:none;transition:transform .3s cubic-bezier(.55,0,1,1)}
+.yafly.stuck{animation:quiv .5s ease-out}
+@keyframes quiv{20%{transform:rotate(-1.5deg)}45%{transform:rotate(1.1deg)}70%{transform:rotate(-.6deg)}100%{transform:none}}
+.yafly::before{content:"";position:absolute;left:0;right:0;top:7px;height:4px;background:linear-gradient(180deg,#d1a86b,var(--take),#9c7442)}
+.yafly::after{content:"";position:absolute;left:4px;top:0;width:78px;height:18px;clip-path:polygon(0 0,100% 30%,100% 70%,0 100%,12% 50%);background:repeating-linear-gradient(90deg,var(--washi) 0 9px,var(--shu) 9px 15px)}
+.ripple{position:absolute;left:50%;top:50%;width:20%;aspect-ratio:1;margin:-10% 0 0 -10%;border-radius:50%;border:3px solid var(--shu);opacity:0}
+.ripple.go{animation:rip .8s ease-out}
+@keyframes rip{0%{opacity:.9;transform:scale(.3)}100%{opacity:0;transform:scale(5)}}
+.tekichu{font-family:var(--brush);color:var(--shu);font-size:clamp(52px,15vw,110px);line-height:1;animation:ink .5s both}
+.kakutei{font-family:var(--mincho);font-weight:800;color:var(--shu);border:5px double var(--shu);background:var(--washi);font-size:clamp(24px,7vw,46px);padding:6px 22px;letter-spacing:.14em;transform:rotate(-4deg);animation:stamp .45s cubic-bezier(.2,1.7,.4,1) both}
+@keyframes stamp{0%{transform:scale(2.6) rotate(-4deg);opacity:0}100%{transform:scale(1) rotate(-4deg);opacity:1}}
+.fx-tap{position:absolute;bottom:calc(20px + env(safe-area-inset-bottom,0px));left:0;right:0;text-align:center;font-size:12px;color:#8c7f6e;letter-spacing:.2em}
+#cf{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:60}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01s!important;animation-iteration-count:1!important;transition-duration:.01s!important}}
+.gm{display:inline-flex;align-items:center;justify-content:center;width:1.5em;height:1.5em;font-size:.7em;font-weight:900;font-family:var(--gothic);margin-right:6px;vertical-align:.15em;border-radius:50%;color:#fff}
+.gm.m{background:#2d4a7a}.gm.f{background:#b0405f}
+.tp-flag span.alt{background:var(--sumi)}
+.fx.locked{cursor:default}.fx.locked .fx-skip,.fx.locked .fx-tap{visibility:hidden}
+
+.lsteps{display:flex;gap:6px;list-style:none;margin:0;padding:0;flex-wrap:wrap}
+.lsteps li{flex:1;min-width:96px;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--sumi-dim);padding:6px 8px;border:1px solid var(--rule);background:#fff}
+.lsteps li b{flex:none;width:20px;height:20px;border-radius:50%;background:var(--rule);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px}
+.lsteps li.now{border-color:var(--shu);color:var(--sumi);box-shadow:inset 0 0 0 1px var(--shu)}
+.lsteps li.now b{background:var(--shu)}
+.lsteps li.did b{background:var(--sumi)}
+.turn{background:var(--sumi);color:var(--washi);padding:14px 16px;display:flex;flex-direction:column;gap:4px;font-weight:700}
+.turn .who{font-family:var(--brush);font-size:30px;font-weight:400;line-height:1.2}
+.turn small{color:#cbbfae;font-size:13px;font-weight:500}
+.turn.win{background:var(--shu)}
+.turn.win small{color:#ffe1dc}
+.order{display:flex;gap:6px;flex-wrap:wrap}
+.order span{font-size:14px;padding:3px 10px;border:1px solid var(--rule);background:#fff;font-weight:700}
+.order span.now{border-color:var(--shu);color:var(--shu);box-shadow:inset 0 0 0 1px var(--shu)}
+.order span.did{color:var(--sumi-dim);background:var(--washi2)}
+.slots{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:10px}
+.slot{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 6px;background:#fff;border:2px solid var(--rule);font-weight:700}
+.slot.drop{animation:ydrop .5s cubic-bezier(.2,1.3,.4,1) both;animation-delay:calc(var(--i)*.1s)}
+.slot.pickable{border-color:var(--sumi)}
+.slot.pickable:hover{border-color:var(--shu);transform:translateY(-3px);transition:transform .15s}
+.slot:disabled{opacity:1;cursor:default}
+.slot.taken{background:var(--washi2)}
+.slot .no{font-size:12px;color:var(--sumi-dim)}
+.slot .ya{display:block;height:130px}
+.slot .nm{font-family:var(--mincho);font-weight:800;font-size:15px;min-height:2.6em;display:flex;align-items:center;text-align:center;line-height:1.3}
+.slot .nm.empty{color:var(--sumi-dim);font-size:12px;font-family:var(--gothic);font-weight:500}
+.slot .rs{font-family:var(--mincho);font-weight:800;min-height:1.4em;color:var(--sumi-dim)}
+.slot.win{border-color:var(--shu);box-shadow:0 0 0 2px var(--shu);background:#fff7f5}
+.slot.win .rs{color:var(--shu);font-size:20px}
+/* スマホでアプリのように: ダブルタップ拡大・引っぱり更新・長押し選択を防ぐ */
+html{touch-action:manipulation;-webkit-text-size-adjust:100%}
+body{overscroll-behavior-y:none;-webkit-tap-highlight-color:transparent}
+button{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
+button:active:not(:disabled){transform:scale(.98)}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="logo" id="logo"></div>
+    <div class="tools" id="tools"></div>
+  </header>
+  <main class="panel" id="stage" aria-live="polite"></main>
+  <section class="panel board" id="board"></section>
+</div>
+<div class="fx" id="fx" hidden></div>
+<canvas id="cf"></canvas>
+
+<script>
+const KEY='kyudo-draft-v6',PKEY='kyudo-draft-prefs';
+const END='__END__';
+const GN={m:'男',f:'女'},GW={m:'男子',f:'女子'};
+const EX={sm:'高橋 陸(たかはし りく)\n伊藤 蓮(いとう れん)',sf:'佐藤 美咲(さとう みさき)\n田中 葵(たなか あおい)\n渡辺 結衣(わたなべ ゆい)',
+          km:'山本 颯太(やまもと そうた)\n小林 湊(こばやし みなと)\n吉田 悠真(よしだ ゆうま)\n松本 大和(まつもと やまと)',kf:'中村 ひなた\n加藤 さくら'};
+const RM=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+const fresh=()=>({phase:'setup',t:{...EX},example:true});
+let S=load()||fresh();
+let UI={picking:null,sel:null,err:'',resetAsk:false,copied:false,showText:false,fresh:[],opening:false,lotKey:null};
+let P=(()=>{try{return Object.assign({sound:true,voice:true},JSON.parse(localStorage.getItem(PKEY)||'{}'))}catch(e){return{sound:true,voice:true}}})();
+let busy=false;const hist=[];
+
+function load(){try{const v=localStorage.getItem(KEY);return v?JSON.parse(v):null}catch(e){return null}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function saveP(){try{localStorage.setItem(PKEY,JSON.stringify(P))}catch(e){}}
+function snap(){hist.push(JSON.stringify(S));if(hist.length>80)hist.shift()}
+function commit(){save();render()}
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+/* 当たりは開封の瞬間に決める（暗号用の乱数） */
+const rnd=n=>{try{const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]%n}catch(e){return Math.floor(Math.random()*n)}};
+const avail=()=>S.kohai.filter(k=>!S.assign[k]);
+/* ルール
+   第一射: 同性の後輩だけ（同性が残っていなければ異性も可）
+   第二射以降: 余った後輩を指名。同性の後輩が残っていない先輩は異性の後輩にも入札できるが、同じ後輩に同性の先輩も入札していたら同性の先輩が優先。
+   第二射以降、同性の後輩が残っていない先輩は「見送る」も選べる */
+function eligible(p,r=S.round){const a=avail();const same=a.filter(k=>S.g[k]===S.g[p]);const other=a.filter(k=>S.g[k]!==S.g[p]);
+  /* 異性に入札できるのは、同性の後輩が1人も残っていない先輩だけ（どの射でも）。男女の「入れ違い」が起きない */
+  if(same.length)return{list:same,cross:false,same,other:[]};
+  return{list:a,cross:a.length>0,same:[],other:a}}
+/* 見送れるのは、同性の後輩がもう残っていない先輩だけ。同性の後輩が残っている先輩は必ず入札するので、毎射かならず誰かに先輩がつく */
+/* 第二射以降は誰でも見送れる。誰も指名しなかった射のあとに残った後輩は「割り当て抽選」で、直属がいちばん少ない同性の先輩から担当を決める */
+const canPass=p=>S.round>1;
+function allocCands(k){let c=S.senpai.filter(p=>S.g[p]===S.g[k]);if(!c.length)c=S.senpai.slice();const n=p=>picksOf(p).length;const m=Math.min(...c.map(n));return c.filter(p=>n(p)===m)}
+async function runAlloc(){
+  while(avail().length){const k=avail()[0];const c=allocCands(k);
+    if(c.length===1){S.assign[k]={s:c[0],r:S.round,a:S.attempt,alloc:true};UI.fresh=[k];commit();
+      item();lock(true);caption('割り当て',esc(k),`${esc(c[0])} が担当します`,'<div class="cap-s">直属がいちばん少ない同性の先輩が担当します</div>');
+      SFX.tekichu();lock(false);await say(`${yomi(k)}は、${yomi(c[0])}が担当します。`);await sleep(1500);continue}
+    S.lots=[{k,c,own:Array(c.length).fill(null),win:null,open:false,alloc:true}];S.lotI=0;S.phase='lottery';commit();
+    await lotIntro();return}
+  S.phase='done';commit();await finale()}
+const canBid=(p,r=S.round)=>eligible(p,r).list.length>0;
+const yomi=n=>(S.yomi&&S.yomi[n])||n;
+const KAN=['〇','一','二','三','四','五','六','七','八','九','十'];
+const kan=n=>n<=10?KAN[n]:(n<20?'十'+KAN[n-10]:String(n));
+const shaName=r=>`第${kan(r)}射`;
+const retryTag=a=>a<=1?'':(a===2?'外れ':a===3?'外れ外れ':`外れ${a-1}回`);
+const hasRound=(p,r)=>Object.values(S.assign).some(x=>x.s===p&&x.r===r);
+const picksOf=p=>S.kohai.filter(k=>S.assign[k]&&S.assign[k].s===p).sort((a,b)=>S.assign[a].r-S.assign[b].r);
+const gm=n=>`<span class="gm ${S.g[n]}">${GN[S.g[n]]}</span>`;
+function mato(cls='m'){const Rr=[18,17.4,10.8,9.3,9.0,7.5,6.9,3.6];
+  return `<svg class="${cls}" viewBox="-18.5 -18.5 37 37" aria-hidden="true">${Rr.map((r,i)=>`<circle r="${r}" fill="${i%2===0?'var(--sumi)':'var(--washi)'}"/>`).join('')}</svg>`}
+
+/* ---------- 演出のスキップ制御 ---------- */
+let SKIPALL=false,SKIP1=false,wakers=[];
+function wake(){const w=wakers;wakers=[];w.forEach(f=>f())}
+const skipping=()=>SKIPALL||SKIP1;
+const sleep=ms=>new Promise(r=>{if(skipping())return r();let f;const t=setTimeout(()=>{wakers=wakers.filter(x=>x!==f);r()},RM?Math.min(ms,200):ms);f=()=>{clearTimeout(t);r()};wakers.push(f)});
+const item=()=>{SKIP1=false};
+
+/* ---------- 音 ---------- */
+let actx=null,nbuf=null;
+function ac(){if(!P.sound||skipping())return null;try{actx=actx||new(window.AudioContext||window.webkitAudioContext)();if(actx.state==='suspended')actx.resume();return actx}catch(e){return null}}
+function osc(f0,f1,t,d,type='sine',v=.15){const c=ac();if(!c)return;const o=c.createOscillator(),g=c.createGain();o.type=type;const s=c.currentTime+t;
+  o.frequency.setValueAtTime(f0,s);if(f1!==f0)o.frequency.exponentialRampToValueAtTime(f1,s+d*.8);
+  g.gain.setValueAtTime(.0001,s);g.gain.linearRampToValueAtTime(v,s+.008);g.gain.exponentialRampToValueAtTime(.0005,s+d);o.connect(g);g.connect(c.destination);o.start(s);o.stop(s+d+.05)}
+function nb(c){if(!nbuf){nbuf=c.createBuffer(1,c.sampleRate*2,c.sampleRate);const a=nbuf.getChannelData(0);for(let i=0;i<a.length;i++)a[i]=Math.random()*2-1}return nbuf}
+function noise(t,d,v,f0,{type='bandpass',f1=null,swell=false,q=.8}={}){const c=ac();if(!c)return;const s=c.createBufferSource();s.buffer=nb(c);s.loop=true;const f=c.createBiquadFilter();f.type=type;f.Q.value=q;const g=c.createGain();const st=c.currentTime+t;
+  f.frequency.setValueAtTime(f0,st);if(f1)f.frequency.exponentialRampToValueAtTime(f1,st+d);
+  if(swell){g.gain.setValueAtTime(.0001,st);g.gain.linearRampToValueAtTime(v,st+d*.4);g.gain.exponentialRampToValueAtTime(.0005,st+d)}
+  else{g.gain.setValueAtTime(v,st);g.gain.exponentialRampToValueAtTime(.0005,st+d)}
+  s.connect(f);f.connect(g);g.connect(c.destination);s.start(st,Math.random());s.stop(st+d+.05)}
+const SFX={
+  tsurune(){noise(0,.04,.5,4000,{type:'highpass'});osc(392,370,0,.5,'triangle',.22);osc(1180,1120,0,.28,'sine',.08);osc(196,190,0,.7,'sine',.12)},
+  ya(){noise(0,.34,.32,500,{f1:3200,swell:true,q:1.4})},
+  tekichu(){noise(0,.09,.7,2500,{type:'highpass'});osc(140,70,0,.22,'sine',.5);noise(.01,.25,.18,900)},
+  taiko(t=0){osc(95,55,t,.7,'sine',.7);noise(t,.18,.35,180,{type:'lowpass'})},
+  zawa(d=1.8){noise(0,d,.24,420,{swell:true});noise(.05,d,.14,780,{swell:true})},
+  clap(d=2.4,v=.3){if(!ac())return;const n=Math.floor(d*80);for(let i=0;i<n;i++){const t=Math.random()*d;const e=Math.min(1,t/.25)*Math.max(.05,1-(t/d)**1.6);noise(t,.03,v*e*(.4+Math.random()*.6),2200+Math.random()*3000)}},
+  paper(){noise(0,.2,.15,2400,{type:'highpass'})}
+};
+
+/* ---------- 場内アナウンス ---------- */
+let jaVoice=null;
+function pickVoice(){try{const vs=speechSynthesis.getVoices();jaVoice=vs.find(v=>/^ja/i.test(v.lang)&&/Kyoko|O-ren|Otoya|Google|Nanami|Keita/i.test(v.name))||vs.find(v=>/^ja/i.test(v.lang))||null}catch(e){}}
+try{pickVoice();speechSynthesis.onvoiceschanged=pickVoice}catch(e){}
+function primeVoice(){try{if(P.voice&&window.speechSynthesis){const u=new SpeechSynthesisUtterance(' ');u.volume=0;speechSynthesis.speak(u)}}catch(e){}}
+function say(text,minMs=0,rate=.9){return new Promise(res=>{if(skipping())return res();const est=500+text.length*160;
+  if(!P.voice||!window.speechSynthesis){sleep(RM?150:Math.max(minMs,Math.min(est,1500))).then(res);return}
+  let done=false;const fin=()=>{if(!done){done=true;wakers=wakers.filter(x=>x!==fin);res()}};wakers.push(fin);
+  try{const u=new SpeechSynthesisUtterance(text);u.lang='ja-JP';if(jaVoice)u.voice=jaVoice;u.rate=rate;u.onend=fin;u.onerror=fin;setTimeout(fin,est+3000);speechSynthesis.speak(u)}catch(e){setTimeout(fin,est)}})}
+function hush(){try{speechSynthesis.cancel()}catch(e){}}
+
+/* ---------- 紙吹雪 ---------- */
+const cv=document.getElementById('cf'),cx=cv.getContext('2d');let parts=[],cfRun=false;
+function confetti(n=160){if(RM||skipping())return;const d=devicePixelRatio||1;cv.width=innerWidth*d;cv.height=innerHeight*d;const cols=['#f7f5ef','#c8261e','#f7f5ef','#c9a46a'];
+  for(let i=0;i<n;i++)parts.push({x:Math.random()*cv.width,y:-Math.random()*cv.height*.5,vx:(Math.random()-.5)*2,vy:1.2+Math.random()*2.6,r:Math.random()*6.28,vr:(Math.random()-.5)*.2,w:(8+Math.random()*8)*d,h:(8+Math.random()*8)*d,c:cols[i%4],d});
+  if(!cfRun){cfRun=true;requestAnimationFrame(cfLoop)}}
+function cfLoop(){cx.clearRect(0,0,cv.width,cv.height);parts=parts.filter(p=>p.y<cv.height+40);
+  for(const p of parts){p.x+=p.vx*p.d+Math.sin(p.r)*.8;p.y+=p.vy*p.d;p.r+=p.vr;cx.save();cx.translate(p.x,p.y);cx.rotate(p.r);cx.fillStyle=p.c;cx.fillRect(-p.w/2,-p.h/2,p.w*Math.abs(Math.cos(p.r*1.5)),p.h);cx.restore()}
+  if(parts.length)requestAnimationFrame(cfLoop);else{cfRun=false;cx.clearRect(0,0,cv.width,cv.height)}}
+
+/* ---------- 全画面演出: 自動で進む。タップで1つ飛ばし、ボタンで全部飛ばし ---------- */
+const fxEl=document.getElementById('fx');
+let LOCK=false;function lock(on){LOCK=on;fxEl.classList.toggle('locked',on)}
+fxEl.addEventListener('click',e=>{if(LOCK)return;if(e.target.closest('[data-skip]'))SKIPALL=true;else SKIP1=true;hush();wake()});
+function showFx(html){if(SKIPALL)return;fxEl.innerHTML=mato('bgmato')+`<span class="room">弓道部 直属ドラフト会議</span><button class="fx-skip" data-skip>演出をとばす</button>`+html+'<div class="fx-tap">タップで次へ</div>';fxEl.hidden=false;requestAnimationFrame(()=>fxEl.classList.add('on'))}
+async function hideFx(){fxEl.classList.remove('on');await new Promise(r=>setTimeout(r,300));fxEl.hidden=true;fxEl.innerHTML=''}
+async function show(fn){busy=true;SKIPALL=false;SKIP1=false;render();try{await fn()}finally{hush();lock(false);await hideFx();SKIPALL=false;SKIP1=false;busy=false;render()}}
+function caption(k,title,sub,extra=''){showFx(`<div class="cap-k">${k}</div><div class="cap">${title}</div>${sub?`<div class="cap-s">${sub}</div>`:''}${extra}`)}
+const $=id=>document.getElementById(id);
+
+async function shoot(){const yf=$('yf');if(!yf)return;
+  SFX.tsurune();await sleep(380);SFX.ya();requestAnimationFrame(()=>yf&&yf.classList.add('go'));await sleep(310);
+  SFX.tekichu();yf.classList.add('stuck');$('hit')&&$('hit').classList.add('shake');$('rip')&&$('rip').classList.add('go');await sleep(400)}
+
+/* 1人分の指名発表: 後輩の名前が出るまではスキップできない */
+async function telop(p,k,dup){
+  const fast=SKIPALL;SKIPALL=false;SKIP1=false;lock(true);
+  const r=S.round,tag=retryTag(S.attempt);const isPass=k===END;const cross=!isPass&&S.g[k]!==S.g[p];
+  showFx(`<div class="tp"><div class="tp-side">${shaName(r)} 選択希望${tag?`<small>${tag}</small>`:''}</div>
+    <div class="tp-body"><div class="tp-team"><small>指名</small>${esc(p)}</div><div class="tp-name wait" id="tpn">${isPass?'見送り':esc(k)}</div><div class="tp-flag" id="tpf"></div></div></div>`);
+  if(isPass){if(!fast){SFX.taiko();await sleep(500);await say(`だい${kan(r)}しゃ、選択希望`,800);await say(yomi(p),600)}
+    const n=$('tpn');if(n)n.className='tp-name show end';lock(false);if(fast){await sleep(900);SKIPALL=true;return}await say('見送り');await sleep(900);return}
+  if(fast){SFX.tsurune();await sleep(700)}
+  else{SFX.taiko();await sleep(500);
+    await say(`だい${kan(r)}しゃ、選択希望`,800);await sleep(150);
+    await say(yomi(p),600);await sleep(350);
+    SFX.tsurune();await sleep(200);SFX.ya();await sleep(280)}
+  const n=$('tpn');if(n)n.className='tp-name show';
+  if(dup)SFX.zawa(1.9);else SFX.tekichu();
+  if($('tpf'))$('tpf').innerHTML=[dup?'<span>重複</span>':'',cross?'<span class="alt">異性指名</span>':''].join(' ');
+  lock(false);
+  if(fast){await sleep(1100);SKIPALL=true;return}
+  await say(yomi(k),800);
+  await sleep(1300);
+}
+
+/* ---------- 入力 ---------- */
+function parseLines(txt){const out=[];
+  for(const raw of (txt||'').split('\n')){let nm=raw.trim();if(!nm)continue;let y='';const m=nm.match(/^(.*?)[（(](.*?)[)）]\s*$/);if(m){nm=m[1].trim();y=m[2].trim()}
+    if(nm)out.push({nm,y})}return out}
+
+/* ---------- 進行 ---------- */
+function start(){
+  const L={};['sm','sf','km','kf'].forEach(id=>L[id]=parseLines($(id).value));
+  const all=[...L.sm,...L.sf,...L.km,...L.kf].map(x=>x.nm);
+  const dupName=all.find((n,i)=>all.indexOf(n)!==i);
+  if(!L.sm.length&&!L.sf.length){UI.err='先輩を入れてください。';return render()}
+  if(!L.km.length&&!L.kf.length){UI.err='後輩を入れてください。';return render()}
+  if(dupName){UI.err=`「${dupName}」が2回入っています。同じ名前の人がいる場合は、区別できるように書き換えてください。`;return render()}
+  primeVoice();snap();UI.err='';
+  const g={},ym={};
+  [['sm','m'],['sf','f'],['km','m'],['kf','f']].forEach(([id,gg])=>L[id].forEach(x=>{g[x.nm]=gg;if(x.y)ym[x.nm]=x.y}));
+  const senpai=[...L.sm,...L.sf].map(x=>x.nm),kohai=[...L.km,...L.kf].map(x=>x.nm);
+  S={phase:'bid',t:S.t,senpai,kohai,g,yomi:ym,assign:{},lost:{},ended:{},round:1,attempt:1,pending:senpai.slice(),picks:{}};
+  commit();
+  show(async()=>{
+    item();caption('開　会','直属ドラフト会議',`弓道部　先輩 ${senpai.length}名 ／ 後輩 ${kohai.length}名`,
+      `<div class="chips"><span>男子　先輩 ${L.sm.length}・後輩 ${L.km.length}</span><span>女子　先輩 ${L.sf.length}・後輩 ${L.kf.length}</span></div>`);
+    SFX.taiko(0);SFX.taiko(.8);SFX.taiko(1.4);await sleep(1800);
+    await say('ただいまより、弓道部、直属ドラフト会議を開会いたします。');await sleep(200);await say('一同、礼。');await sleep(900);
+    await roundCaption();
+  });
+}
+async function roundCaption(){item();
+  caption(shaName(S.round),'入札',S.round===1?'全員が指名用紙を出したら、まとめて発表します':'余った後輩を指名します。異性の後輩は、同性の先輩と重なったら同性優先',S.round===1?'':`<div class="chips">${S.pending.map(p=>`<span>${esc(p)}</span>`).join('')}</div>`);SFX.taiko();
+  await say(`${S.round===1?'それでは、':'続いて、'}だい${kan(S.round)}しゃ、選択希望の入札を行います。`);await sleep(1200)}
+function submitPick(){snap();S.picks[UI.picking]=UI.sel;UI.picking=null;UI.sel=null;SFX.paper();commit()}
+function startReveal(){snap();
+  show(async()=>{
+    const ord=S.pending.slice();const cnt={};ord.forEach(p=>{const k=S.picks[p];if(k!==END)cnt[k]=(cnt[k]||0)+1});
+    item();caption(shaName(S.round),'入札締切','発表します');SFX.taiko();
+    await say('入札が締め切られました。発表いたします。');await sleep(500);
+    for(const p of ord)await telop(p,S.picks[p],cnt[S.picks[p]]>1);
+    const singles=resolve();
+    if(S.prio.length){item();caption('同性優先','同性の先輩が優先','同じ後輩に同性の先輩も入札していたため、次の指名は外れになります',`<div class="chips">${S.prio.map(x=>`<span>${esc(x.p)}　×　${esc(x.k)}</span>`).join('')}</div>`);
+      SFX.zawa(1.4);await say('同性の先輩の指名が優先されます。');await sleep(1600)}
+    if(singles.length){item();caption('単独指名','交渉権確定','','<div class="chips" id="sg"></div>');
+      await say('単独指名は、交渉権が確定しました。');const sg=$('sg');
+      for(const k of singles){if(sg){const sp=document.createElement('span');sp.innerHTML=`<b>○</b>${esc(S.assign[k].s)}　→　${esc(k)}`;sg.appendChild(sp)}SFX.tekichu();await sleep(400)}
+      await sleep(1400)}
+    if(S.phase==='lottery')await lotIntro();else await phaseIntro();
+  });
+}
+function resolve(){
+  const g={};
+  S.pending.forEach(p=>{const k=S.picks[p];if(k===END){S.passed=S.passed||{};(S.passed[p]=S.passed[p]||[]).push(S.round)}else (g[k]=g[k]||[]).push(p)});
+  S.lots=[];const singles=[];S.prio=[];
+  for(const k in g){
+    const same=g[k].filter(p=>S.g[p]===S.g[k]);
+    if(same.length&&same.length<g[k].length){g[k].filter(p=>S.g[p]!==S.g[k]).forEach(p=>{S.prio.push({p,k});(S.lost[p]=S.lost[p]||[]).push({k,r:S.round,prio:true})});g[k]=same}
+    if(g[k].length===1){S.assign[k]={s:g[k][0],r:S.round,a:S.attempt};singles.push(k)}
+    else S.lots.push({k,c:g[k],own:Array(g[k].length).fill(null),win:null,open:false});
+  }
+  UI.fresh=singles;
+  if(S.lots.length){S.phase='lottery';S.lotI=0}else finishAttempt();
+  commit();return singles;
+}
+async function lotIntro(){item();const L=S.lots[S.lotI];
+  if(L.alloc){showFx(`<div class="tp"><div class="tp-side">割り当て抽選<small>${L.c.length}人</small></div>
+    <div class="tp-body"><div class="tp-team"><small>まだ先輩がいない後輩</small></div><div class="tp-name show">${esc(L.k)}</div>
+    <div class="chips" style="justify-content:flex-start;margin-top:8px">${L.c.map(p=>`<span>${esc(p)}</span>`).join('')}</div></div></div>`);
+    SFX.zawa(2);await say(`${yomi(L.k)}の担当を、抽選で決めます。朱の矢羽を引いた先輩が担当です。`);await sleep(1200);return}
+  showFx(`<div class="tp"><div class="tp-side">重複指名<small>${L.c.length}人</small></div>
+    <div class="tp-body"><div class="tp-team"><small>矢取り抽選 ${S.lotI+1}／${S.lots.length}</small></div><div class="tp-name show">${esc(L.k)}</div>
+    <div class="chips" style="justify-content:flex-start;margin-top:8px">${L.c.map(p=>`<span>${esc(p)}</span>`).join('')}</div></div></div>`);
+  SFX.zawa(2);await say(`${yomi(L.k)}、${L.c.length}名の指名が重複しましたので、矢取りの抽選を行います。朱の矢羽が、的中です。`);await sleep(1200)}
+function lotChooser(L){return L.c[L.own.filter(Boolean).length]}
+function takeLot(i){const L=S.lots[S.lotI];if(L.own[i]||L.open)return;snap();L.own[i]=lotChooser(L);SFX.paper();commit()}
+async function openLots(){
+  busy=true;const L=S.lots[S.lotI];snap();L.win=rnd(L.c.length);render();
+  await say('それでは、一斉に、矢をあらためてください。');
+  UI.opening=true;SFX.paper();render();await sleep(1300);
+  const win=L.own[L.win];
+  L.open=true;S.assign[L.k]={s:win,r:S.round,a:S.attempt};
+  if(L.alloc)S.assign[L.k].alloc=true;else L.c.filter(p=>p!==win).forEach(p=>{(S.lost[p]=S.lost[p]||[]).push({k:L.k,r:S.round})});
+  UI.opening=false;UI.fresh=[L.k];commit();
+  await sleep(1000);busy=false;
+  show(async()=>{
+    item();lock(true);showFx(`<div class="hit" id="hit">${mato()}<span class="ripple" id="rip"></span><span class="yafly" id="yf" style="--dy:${(Math.random()*16-8).toFixed(0)}px;--dx:${(Math.random()*12-6).toFixed(0)}px"></span></div><div id="res" style="display:flex;flex-direction:column;align-items:center;gap:10px;min-height:170px"></div>`);
+    await sleep(400);await shoot();
+    if($('res'))$('res').innerHTML=`<div class="tekichu">的中</div><div class="cap-s" style="font-size:clamp(18px,5vw,26px);color:var(--washi)"><b>${esc(win)}</b>　→　${esc(L.k)}</div><div class="kakutei">${L.alloc?'担当決定':'交渉権確定'}</div>`;
+    lock(false);say('よしっ！',0,1.15);SFX.clap(2.4,.3);await sleep(600);
+    await say(L.alloc?`${yomi(L.k)}は、${yomi(win)}が担当します。`:`${yomi(L.k)}の交渉権は、${yomi(win)}が獲得しました。`);await sleep(1500);
+    if(L.alloc){await runAlloc()}
+    else if(S.lotI<S.lots.length-1){S.lotI++;UI.fresh=[];commit();await lotIntro()}
+    else{finishAttempt();commit();await phaseIntro()}
+  });
+}
+function finishAttempt(){
+  const losers=S.pending.filter(p=>S.picks[p]!==END&&!hasRound(p,S.round)).filter(p=>canBid(p));
+  S.attempt++;S.picks={};S.lots=null;S.pending=losers;
+  if(losers.length&&avail().length)S.phase='bid';
+  else S.phase=!avail().length?'done':(S.round>1&&!Object.values(S.assign).some(x=>x.r===S.round))?'alloc':'roundEnd';
+}
+async function phaseIntro(){item();
+  if(S.phase==='bid'){
+    const crossNow=S.pending.filter(p=>eligible(p).cross);
+    caption('再入札',`${shaName(S.round)}（${retryTag(S.attempt)}）`,
+      '外れた先輩は、残っている後輩からもう一度指名してください',
+      `<div class="chips">${S.pending.map(p=>`<span>${esc(p)}</span>`).join('')}</div>`);
+    SFX.taiko();await say(`外れた先輩は、再度、だい${kan(S.round)}しゃの入札を行ってください。`);await sleep(1800);
+  }else if(S.phase==='alloc'){
+    caption('割り当て抽選','全員が見送り',`まだ先輩がいない後輩が ${avail().length}人います。直属がいちばん少ない同性の先輩の中から、抽選で担当を決めます`);
+    SFX.zawa(1.6);await say('全員が見送りましたので、まだ先輩がいない後輩の担当を、抽選で決めます。');await sleep(1500);
+    await runAlloc();
+  }else if(S.phase==='roundEnd'){
+    caption(shaName(S.round),'指名終了',`まだ指名されていない後輩は ${avail().length}人です`);
+    SFX.taiko();await say(`以上で、だい${kan(S.round)}しゃの指名を終了いたします。`);await sleep(1500);
+  }else if(S.phase==='done')await finale();
+}
+function nextRound(){snap();S.round++;S.attempt=1;S.picks={};S.pending=S.senpai.filter(p=>canBid(p));S.phase='bid';commit();show(roundCaption)}
+async function finale(){item();
+  caption('閉　会','全指名終了','直属の後輩が決まりました。これからもよろしくお願いします');
+  SFX.taiko(0);SFX.taiko(.7);SFX.taiko(1.1);await sleep(1200);
+  await say('以上をもちまして、弓道部、直属ドラフト会議の全指名を終了いたします。');await sleep(200);await say('一同、礼。');
+  SFX.clap(3.2,.4);confetti(200);await sleep(2200);
+}
+function finish(){snap();S.phase='done';commit();show(finale)}
+function undo(){if(!hist.length)return;S=JSON.parse(hist.pop());UI.picking=null;UI.sel=null;UI.fresh=[];commit()}
+function reset(){snap();S={phase:'setup',t:S.t};UI.resetAsk=false;UI.picking=null;commit()}
+function resultText(){
+  const line=p=>{const ks=picksOf(p);return `${p} ← ${ks.length?ks.map(k=>S.g[k]!==S.g[p]?`${k}（${GW[S.g[k]]}）`:k).join('、'):'なし'}`};
+  const rest=avail();
+  return '弓道部 直属ドラフト会議 結果\n\n'+['m','f'].map(gg=>{const ps=S.senpai.filter(p=>S.g[p]===gg);return ps.length?`【${GW[gg]}の先輩】\n`+ps.map(line).join('\n'):''}).filter(Boolean).join('\n\n')+(rest.length?`\n\n未指名: ${rest.join('、')}`:'');
+}
+function copyRes(){const t=resultText();const ok=()=>{UI.copied=true;render();setTimeout(()=>{UI.copied=false;render()},1800)};
+  try{navigator.clipboard.writeText(t).then(ok,()=>{UI.showText=true;render()})}catch(e){UI.showText=true;render()}}
+
+/* ---------- 画面 ---------- */
+function stepHead(label,tag,progress){return `<div class="step"><span class="no">${label}</span>${tag?`<span class="tg">${tag}</span>`:''}${progress?`<span class="pr">${progress}</span>`:''}</div>`}
+function ta(id,lab){return `<div><label for="${id}">${lab}<span class="dim" id="${id}c"></span></label><textarea id="${id}" spellcheck="false" placeholder="1行に1人">${esc((S.t&&S.t[id])||'')}</textarea></div>`}
+
+function vSetup(){return `
+  ${stepHead('準備')}
+  <h2>先輩と後輩の名前を、男女別に入れてください</h2>
+  ${S.example?'<p class="note">いまは例の名前が入っています。書き換えて使ってください。</p>':''}
+  <div class="grid2">
+    ${ta('sm','<span><span class="gm m">男</span> 男子の先輩</span>')}${ta('sf','<span><span class="gm f">女</span> 女子の先輩</span>')}
+    ${ta('km','<span><span class="gm m">男</span> 男子の後輩</span>')}${ta('kf','<span><span class="gm f">女</span> 女子の後輩</span>')}
+  </div>
+  <p class="lead">後輩全員に先輩がつくまで指名が続きます。指名は原則同性で、第一射だけは同性の後輩が残っていなければ異性も指名できます。第二射からは余った後輩を先輩全員で指名し、同性の後輩が残っていない先輩は異性の後輩にも入札できます。ただし同じ後輩に同性の先輩も入札していたら、同性の先輩が優先です。第二射からは誰でも「今回は見送る」を選べます。全員が見送って先輩のいない後輩が残ったときは、直属がいちばん少ない同性の先輩の中から抽選で担当を決めるので、後輩全員に必ず先輩がつきます。名前のあとに（よみ）を付けると、アナウンスが正しく読みます。</p>
+  ${UI.err?`<p class="err">${esc(UI.err)}</p>`:''}
+  <button class="primary" data-a="start">開会する</button>`}
+
+function vBid(){
+  const tag=retryTag(S.attempt);
+  if(UI.picking){const p=UI.picking;const el=eligible(p);
+    return `${stepHead(`${shaName(S.round)}　入札`,tag)}
+      <div class="picker-h"><b>${esc(p)}</b><span class="dim">さんの指名</span></div>
+      ${S.round===1&&el.cross?`<p class="note">${GW[S.g[p]]}の後輩がもう残っていないので、${GW[S.g[p]==='m'?'f':'m']}の後輩から選べます。</p>`:''}
+      <p class="lead">ほかの人に見えないように選んで、「提出する」を押してください。</p>
+      ${S.round>1&&el.same.length&&el.other.length?`<p class="lead" style="font-weight:700;color:var(--sumi)">${GW[S.g[p]]}の後輩</p>`:''}
+      <div class="opts">${(S.round>1?el.same:el.list).map(k=>`<button class="${UI.sel===k?'sel':''}" data-a="sel" data-v="${esc(k)}">${esc(k)}</button>`).join('')}</div>
+      ${S.round>1&&el.other.length?`<p class="lead" style="font-weight:700;color:var(--sumi)">${GW[S.g[p]==='m'?'f':'m']}の後輩<span style="font-weight:500;color:var(--sumi-dim)">　同じ後輩に${GW[S.g[p]==='m'?'f':'m']}の先輩も入札したら、そちらが優先</span></p>
+        <div class="opts">${el.other.map(k=>`<button class="${UI.sel===k?'sel':''}" data-a="sel" data-v="${esc(k)}">${esc(k)}</button>`).join('')}</div>`:''}
+      ${canPass(p)?`<div class="opts"><button class="end ${UI.sel===END?'sel':''}" data-a="sel" data-v="${END}">今回は見送る</button></div>`:''}
+      <button class="primary shu" data-a="submit" ${UI.sel?'':'disabled'}>提出する</button>
+      <button class="sub" data-a="cancelPick">戻る</button>`}
+  const done=S.pending.filter(p=>S.picks[p]).length,all=done===S.pending.length;
+  return `${stepHead(`${shaName(S.round)}　入札`,tag,`提出 ${done}／${S.pending.length}`)}
+    <h2>${all?'全員そろいました':'自分の名前を押して、指名する後輩を選んでください'}</h2>
+    <div class="people">${S.pending.map(p=>`<button class="person ${S.picks[p]?'done':''}" data-a="pick" data-v="${esc(p)}"><span class="nm">${gm(p)}${esc(p)}</span><span class="st">${S.picks[p]?'提出済み':'まだ'}</span></button>`).join('')}</div>
+    ${all?'':'<p class="lead">提出済みの人も、押せば選び直せます。全員が提出するまで発表はされません。</p>'}
+    <button class="primary" data-a="reveal" ${all?'':'disabled'}>${all?'締め切って発表する':`あと${S.pending.length-done}人の提出を待っています`}</button>`;
+}
+
+function vLottery(){
+  const L=S.lots[S.lotI];const ch=lotChooser(L);const allDrawn=!ch;const opening=UI.opening||L.open;
+  const key=S.round+'-'+S.attempt+'-'+S.lotI+'-'+L.k;const drop=UI.lotKey!==key;UI.lotKey=key;
+  const stage=L.open?3:allDrawn?2:1;const win=L.own[L.win];
+  const steps=['矢を1本ずつ選ぶ','一斉に開ける','結果'].map((t,i)=>`<li class="${i+1===stage?'now':i+1<stage?'did':''}"><b>${i+1}</b>${t}</li>`).join('');
+  const turn=stage===1?`<div class="turn"><span><span class="who">${esc(ch)}</span> さんの番です</span><small>下の矢から好きな1本をタップしてください。どれが当たりかは開けるまでわかりません</small></div>`
+    :stage===2?`<div class="turn"><span class="who">${UI.opening?'開封中…':'全員が選びました'}</span><small>下のボタンで、全員の矢の封を一斉に開けます</small></div>`
+    :`<div class="turn win"><span><span class="who">${esc(win)}</span> さんが当たり</span><small>${esc(L.k)} の${L.alloc?'担当に決まりました':'交渉権を獲得しました'}</small></div>`;
+  const order=`<div class="order">${L.c.map(p=>{const got=L.own.includes(p);return `<span class="${!L.open&&p===ch?'now':got?'did':''}">${esc(p)}${got&&!L.open?' ✓':''}</span>`}).join('')}</div>`;
+  const slots=L.own.map((o,i)=>{const can=!o&&!opening;
+    return `<button class="slot ${o?'taken':''} ${can?'pickable':''} ${L.open&&i===L.win?'win':''} ${drop?'drop':''}" style="--i:${i}" data-a="lot" data-v="${i}" ${can?'':'disabled'} aria-label="${kan(i+1)}本目の矢${o?'、'+esc(o)+'さんが選択':''}">
+      <span class="no">${kan(i+1)}本目</span>
+      <span class="ya ${opening?'open':''}"><span class="shaft"></span><span class="hane ${opening&&i===L.win?'win':''}"></span><span class="fuu">封</span></span>
+      <span class="nm ${o?'':'empty'}">${o?esc(o):'まだ誰も選んでいない'}</span>
+      <span class="rs">${L.open?(i===L.win?'当たり':'外れ'):''}</span></button>`}).join('');
+  return `${stepHead(L.alloc?'割り当て抽選':'矢取り抽選','',L.alloc?'':`${S.lotI+1}／${S.lots.length}件目`)}
+    <div><div class="lot-k">${esc(L.k)}</div><p class="lead">${L.alloc?'誰も指名しなかった後輩の担当を、直属がいちばん少ない先輩の中から決めます。朱色の矢羽を引いた人が担当です。':`${L.c.length}人が同じ後輩を指名したので、矢を引いて決めます。朱色の矢羽が当たりです。`}</p></div>
+    <ol class="lsteps">${steps}</ol>
+    ${turn}
+    ${stage===1?`<div><p class="lead" style="margin-bottom:6px">選ぶ順番</p>${order}</div>`:''}
+    <div class="slots">${slots}</div>
+    ${stage<3?`<button class="primary shu" data-a="openLots" ${stage===2&&!UI.opening?'':'disabled'}>${stage===1?`全員が選ぶと開けられます（あと${L.c.length-L.own.filter(Boolean).length}人）`:'一斉に封を開ける'}</button>`:''}`;
+}
+
+function vRoundEnd(){const r=avail();
+  return `${stepHead(`${shaName(S.round)}　終了`)}
+    <h2>まだ指名されていない後輩が ${r.length}人 います</h2>
+    <div class="rest">${r.map(k=>`<span>${gm(k)}${esc(k)}</span>`).join('')}</div>
+    <p class="lead">${shaName(S.round+1)}は先輩全員で、余った後輩を指名します。同性の後輩が残っていない先輩は異性の後輩にも入札できますが、同じ後輩に同性の先輩も入札していたら同性の先輩が優先です。これ以上持ちたくない人は「今回は見送る」を選べます。全員が見送った場合は、直属がいちばん少ない同性の先輩の中から抽選で担当を決めます。</p>
+    <button class="primary" data-a="nextRound">${shaName(S.round+1)}に進む</button>`}
+
+function vDone(){return `${stepHead('閉会')}
+  <h2>直属が決まりました</h2>
+  <div class="results">${S.senpai.map(p=>{const ks=picksOf(p);return `<div class="rc"><span class="sp">${gm(p)}${esc(p)}</span>${ks.length?ks.map(k=>`<div class="k"><span>${esc(k)}${S.g[k]!==S.g[p]?` <span class="gm ${S.g[k]}">${GN[S.g[k]]}</span>`:''}</span><small>${shaName(S.assign[k].r)}</small></div>`).join(''):'<span class="dim">なし</span>'}</div>`}).join('')}</div>
+  ${avail().length?`<p class="lead">未指名：${avail().map(esc).join('、')}</p>`:''}
+  <button class="primary" data-a="copy">${UI.copied?'コピーしました':'結果をテキストでコピー'}</button>
+  ${UI.showText?`<textarea readonly style="min-height:160px">${esc(resultText())}</textarea>`:''}
+  <div class="row"><button class="sub" data-a="replay">閉会の演出をもう一度</button></div>`}
+
+function vBoard(){
+  if(!S.senpai)return `<div class="board-title"><b>指名表</b></div><p class="lead">開会すると、ここに先輩ごとの指名が書き込まれていきます。</p>`;
+  const rounds=S.phase==='done'?Math.max(1,...Object.values(S.assign).map(a=>a.r)):S.round;
+  const openL=S.phase==='lottery'&&S.lots?S.lots.filter(L=>!L.open):[];
+  const cell=(p,r)=>{
+    let h='';(S.lost[p]||[]).filter(x=>x.r===r).forEach(x=>h+=`<span class="x">${esc(x.k)}${x.prio?'（同性優先）':''}</span>`);
+    const k=picksOf(p).find(k=>S.assign[k].r===r);
+    if(k){const a=S.assign[k];return h+`<span class="${UI.fresh.includes(k)?'new':''}"><span class="o">○</span>${esc(k)}</span>${S.g[k]!==S.g[p]?`<span class="lb r">異性</span>`:''}${a.alloc?'<span class="lb">割当</span>':''}${a.a>1&&!a.alloc?`<span class="lb">${retryTag(a.a)}</span>`:''}`}
+    if(S.passed&&(S.passed[p]||[]).includes(r))return h+'<span class="pend">見送り</span>';
+    if(r===S.round&&S.phase==='lottery'){const L=openL.find(L=>L.c.includes(p));if(L)return h+`<span class="pend">${esc(L.k)}</span><span class="lb r">抽選</span>`}
+    if(r===S.round&&S.phase==='bid'&&S.pending.includes(p))return h+`<span class="pend">${S.picks[p]?'提出済み':'入札中'}</span>`;
+    return h||'<span class="pend">—</span>';
+  };
+  const rest=avail();
+  return `<div class="board-title"><b>指名表</b><span class="dim" style="font-size:12px">○＝交渉権確定</span></div>
+    <div class="bwrap"><table><thead><tr><th class="rh"></th>${S.senpai.map(p=>`<th>${gm(p)}${esc(p)}</th>`).join('')}</tr></thead>
+    <tbody>${Array.from({length:rounds},(_,i)=>`<tr><td class="rh">${shaName(i+1)}</td>${S.senpai.map(p=>`<td>${cell(p,i+1)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+    ${rest.length?`<span class="dim" style="font-size:13px;font-weight:700">未指名の後輩 ${rest.length}人</span><div class="rest">${rest.map(k=>`<span>${gm(k)}${esc(k)}</span>`).join('')}</div>`:''}`;
+}
+
+function render(){
+  const v={setup:vSetup,bid:vBid,lottery:vLottery,roundEnd:vRoundEnd,alloc:()=>`${stepHead('割り当て抽選')}<h2>まだ先輩がいない後輩の担当を決めます</h2><button class="primary" data-a="alloc">割り当て抽選を始める</button>`,done:vDone}[S.phase];
+  $('stage').innerHTML=v();
+  $('board').innerHTML=vBoard();
+  $('tools').innerHTML=UI.resetAsk?`<span class="confirm">最初からやり直しますか？<button data-a="reset">やり直す</button><button data-a="noReset">やめる</button></span>`
+    :`<button data-a="voice">アナウンス ${P.voice?'ON':'OFF'}</button><button data-a="sound">効果音 ${P.sound?'ON':'OFF'}</button>${S.phase!=='setup'?`<button data-a="undo" ${hist.length?'':'disabled'}>1つ戻す</button><button data-a="askReset">やり直し</button>`:''}`;
+  if(S.phase==='setup'){const ids=['sm','sf','km','kf'];const upd=()=>ids.forEach(id=>{$(id+'c').textContent=$(id).value.split('\n').filter(x=>x.trim()).length+'人'});
+    ids.forEach(id=>$(id).addEventListener('input',e=>{S.t=S.t||{};S.t[id]=e.target.value;S.example=false;save();upd()}));upd()}
+}
+$('logo').innerHTML=mato('lm')+'<div><small>弓道部</small><h1>直属ドラフト会議</h1></div>';
+
+document.addEventListener('click',e=>{
+  if(busy)return;
+  const b=e.target.closest('[data-a]');if(!b||b.disabled)return;const a=b.dataset.a,v=b.dataset.v;
+  switch(a){
+    case 'start':start();break;
+    case 'pick':UI.picking=v;UI.sel=null;render();window.scrollTo({top:0});break;
+    case 'cancelPick':UI.picking=null;UI.sel=null;render();break;
+    case 'sel':UI.sel=v;render();break;
+    case 'submit':submitPick();break;
+    case 'reveal':startReveal();break;
+    case 'lot':takeLot(+v);break;
+    case 'openLots':openLots();break;
+    case 'nextRound':nextRound();break;
+    case 'alloc':show(runAlloc);break;
+    case 'finish':finish();break;
+    case 'replay':show(finale);break;
+    case 'undo':undo();break;
+    case 'askReset':UI.resetAsk=true;render();break;
+    case 'noReset':UI.resetAsk=false;render();break;
+    case 'reset':reset();break;
+    case 'copy':copyRes();break;
+    case 'voice':P.voice=!P.voice;saveP();if(P.voice){primeVoice();say('アナウンス、オンです。')}else hush();render();break;
+    case 'sound':P.sound=!P.sound;saveP();if(P.sound)SFX.tsurune();render();break;
+  }
+});
+/* 画面が途中で暗くならないようにする（対応端末のみ） */
+let wl=null;async function keepAwake(){try{if('wakeLock' in navigator&&!wl&&document.visibilityState==='visible'){wl=await navigator.wakeLock.request('screen');wl.addEventListener('release',()=>{wl=null})}}catch(e){}}
+document.addEventListener('click',keepAwake,{capture:true});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&S.phase!=='setup')keepAwake()});
+render();
+</script>
+
+<script>
+if('serviceWorker' in navigator){addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{})})}
+</script>
+</html>
